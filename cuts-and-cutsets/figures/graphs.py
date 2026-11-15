@@ -1,4 +1,4 @@
-"""Regenerate the graph illustrations with: python3 figures/graphs.py"""
+"""Regenerate the graph illustrations with: python3 cuts-and-cutsets/figures/graphs.py"""
 from pathlib import Path
 import re
 import subprocess
