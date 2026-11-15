@@ -6,6 +6,7 @@
 #show regex("[0-9]+"): set text(font: "Arial")
 #set par(leading: 0.85em, spacing: 1.35em)
 #set heading(numbering: "1.")
+#set figure(gap: 5pt)
 #show heading.where(level: 1): it => block(
   width: 100%,
   inset: (bottom: 9pt),
@@ -42,7 +43,7 @@
   below: 12pt,
 )
 #let definition = framed.with(supplement: "定義", counter: "definition")
-#let theorem = framed.with(supplement: "定理", counter: "theorem")
+#let theorem = framed.with(supplement: "定理", counter: "theorem", fill: rgb("FFFCF3"))
 #let lemma = framed.with(supplement: "補題", counter: "lemma")
 #let remark = framed.with(supplement: "注意", counter: "remark")
 #let proof-env = proof.with(
@@ -55,6 +56,8 @@
 
 #let proof(body) = {
   v(10pt)
+  line(length: 100%, stroke: 0.4pt + rgb("B0B0B0"))
+  v(8pt)
   proof-env(body)
 }
 
@@ -85,7 +88,13 @@ $ s in S, quad t in.not S $
 2つの側をつなぐ辺のところでグラフを切り分ける、と捉えると「カット」という名前をイメージしやすいです。]
 ] <def-cut>
 
+#block(breakable: false)[
 $S$ に含まれない頂点の集まり $V backslash S$ を $T$ と書き、両側を組にして $(S, T)$ と表す流儀もあります。本節では、$s$ 側の頂点集合 $S$ でカットを表します。
+
+#figure(
+  image("figures/cut.svg", width: 100%),
+) <fig-cut>
+]
 
 #definition[
 辺集合 $E' subset.eq E$ に対し、$s$ からの*到達可能集合*（reachable set）を
@@ -93,7 +102,11 @@ $ "Reach"_(s)(E') := {v in V | s arrow.squiggly v " in " (V, E')} $
 と定めます#footnote[$"Reach"_(s)$ は標準的な記号ではなく、このノート内でのみ用いる記法です。]。ただし、$s arrow.squiggly v " in " (V, E')$ は、辺集合 $E'$ の辺だけを使う有向パスで $s$ から $v$ へ到達できることを表します。長さ $0$ のパスも認めます。
 
 #intuition[残っている道だけを使って、$s$ からどこまで行けるかを表します。矢印の逆向きには進めません。]
+#figure(
+  image("figures/reachable-vertices.svg", width: 100%),
+) <fig-reach>
 ] <def-reach>
+
 
 #definition[
 頂点集合 $S subset.eq V$ に対し、$S$ の*出辺境界*（outgoing edge boundary）を
@@ -101,7 +114,11 @@ $ delta^+(S) := {(u,v) in E | u in S, v in.not S} $
 と定めます。
 
 #intuition[$S$ を一つの区域と見ると、その内側から外側へ境目を越える道に当たります。入ってくる向きの道は数えません。]
+#figure(
+  image("figures/outgoing-boundary.svg", width: 100%),
+) <fig-boundary>
 ] <def-boundary>
+
 
 #definition[
 辺集合 $F subset.eq E$ が*カットセット*（cutset）であるとは、あるカット $S$ について
@@ -120,7 +137,29 @@ $ F = delta^+(S) $
 
 - $F$ を取り除くと、$s$ から $t$ へ到達できなくなります。
 - あるカット $S$ のカットセットが $F$ に含まれます。すなわち、$delta^+(S) subset.eq F$ が成立します。
+
 ] <thm-cutset>
+
+#block(breakable: false)[
+*2条件を満たす例*
+
+$F$ を取り除くと $t$ へ行けなくなり、$S$ から外へ出る辺もすべて $F$ に含まれています。
+
+#figure(
+  image("figures/theorem-satisfies.svg", width: 90%),
+) <fig-theorem-satisfies>
+]
+
+#block(breakable: false)[
+*2条件を満たさない例*
+
+$F$ を取り除いても $t$ へ行ける経路が残り、$F$ はどのカットセットも含んでいません。
+
+#figure(
+  image("figures/theorem-fails.svg", width: 90%),
+) <fig-theorem-fails>
+]
+
 
 この同値性を示すため、まずカットセットを取り除いたときの性質を確認し、次に到達を妨げる辺集合からカットセットを見つけます。
 
@@ -132,15 +171,20 @@ $ t in.not "Reach"_(s)(E backslash delta^+(S)) $
 #proof[
 $s$ から $t$ への任意の有向パスは、$S$ 内から始まり $S$ 外で終わるため、少なくとも一度 $S$ から外へ出ます。その際に通る辺は $delta^+(S)$ に属します。したがって、それらの辺をすべて除くと $s$ から $t$ へのパスは存在しません。
 ]
+
+#figure(
+  image("figures/lemma-cut-removal.svg", width: 90%),
+) <fig-lemma-boundary>
 ] <lem-boundary>
 
 #remark[
-辺集合 $F subset.eq E$ を取り除くと $s$ から $t$ へ到達できなくなっても、$F$ 自体がカットセットであるとは限りません。つまり、@thm-cutset の包含関係は、必ずしも等号になるわけではありません。
+到達を妨げる辺集合が、それ自体でカットセットになるとは限りません。つまり、@thm-cutset の包含関係は、必ずしも等号になりません。
 
-例えば、頂点 $s, a, t$ と辺 $e_1 = (s,a)$、$e_2 = (a,t)$ からなるグラフで、$F = {e_1, e_2}$ とします。$F$ を取り除くと $s$ から $t$ へ到達できなくなりますが、カットは $S = {s}$ と $S = {s,a}$ の2つだけで、それぞれ
-$ delta^+({s}) = {e_1}, quad delta^+({s,a}) = {e_2} $
-となります。したがって $F = delta^+(S)$ となるカットはなく、$F$ はカットセットではありません。
+下の例では、$F$ は2本の辺を含みますが、カットセットはどちらか1本だけです。
 
+#figure(
+  image("figures/extra-edges-counterexample.svg", width: 100%),
+) <fig-extra-edges>
 ] <rem-extra-edges>
 
 #lemma[
@@ -159,6 +203,10 @@ $ delta^+(R) subset.eq F $
 ]
 
 #intuition[残った道で $s$ から行ける場所と、行けない場所に分けてみます。行ける側から境目を越える道が残っていれば、その先にも行けるはずです。だから、そのような道はすべて取り除かれていたと分かります。]
+
+#figure(
+  image("figures/lemma-reachable-cut.svg", width: 90%),
+) <fig-lemma-reach>
 ] <lem-reach>
 
 最後に、2つの補題を使って @thm-cutset を示します。
