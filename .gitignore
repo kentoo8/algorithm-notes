@@ -1,0 +1,17 @@
+# OS metadata
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# Editor backup and temporary files
+*~
+*.swp
+*.swo
+*.tmp
+
+# Python cache and local virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
