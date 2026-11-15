@@ -13,6 +13,22 @@ EDGES = [('s','a'), ('s','b'), ('a','c'), ('b','c'),
 S = {'s','a','b'}
 KEPT = {('s','b'), ('b','c'), ('c','a'), ('d','t')}
 BLUE, ORANGE, INK, GRAY = '#175CD3', '#A34B00', '#30343B', '#7A8088'
+RED = '#B42318'
+
+def deletion_mark(x, y, color=ORANGE):
+    """Clear the underlying line and leave visible whitespace around every cross."""
+    path = f'M{x-4},{y-4} l8,8 M{x-4},{y+4} l8,-8'
+    return (
+        f'<circle cx="{x}" cy="{y}" r="8" fill="white"/>'
+        f'<path d="{path}" fill="none" stroke="{color}" stroke-width="1.8"/>'
+    )
+
+def removed_edge(path, x, y, color=ORANGE, *, cross_color=None):
+    """Share thin dashed edges and deletion marks across diagrams and legends."""
+    return (
+        f'<path d="{path}" fill="none" stroke="{color}" stroke-width="1.5" stroke-dasharray="5 5"/>'
+        + deletion_mark(x, y, color if cross_color is None else cross_color)
+    )
 
 def reachable(edges):
     seen = {'s'}
@@ -140,24 +156,19 @@ def svg(mode):
             path=f'M{x1},{y1} Q{q1x},{q1y} {mx},{my} Q{q2x},{q2y} {x2},{y2}'
         else:
             path=f'M{x1},{y1} L{(x1+x2)/2},{(y1+y2)/2} L{x2},{y2}'
-        arrow = '' if ((mode == 'lemma1' and (u,v) in BOUNDARY) or (mode == 'lemma2' and deleted and not boundary)) else f'marker-mid="url(#{marker})"'
-        parts.append(f'<path d="{path}" fill="none" stroke="{color}" stroke-width="{width}" {dash} {arrow}/>')
-        if (mode == 'lemma1' and (u,v) in BOUNDARY) or (mode == 'lemma2' and deleted):
-            if (u,v) in {('a','c'), ('c','a')}:
-                cross_x,cross_y = mx,my
-            else:
-                cross_x,cross_y = (x1+x2)/2,(y1+y2)/2
-            cross_color = ORANGE
+        deleted = (
+            (mode == 'lemma1' and (u,v) in BOUNDARY)
+            or (mode == 'lemma2' and (u,v) in BOUNDARY | {('c','t')})
+            or (example and (u,v) in removed)
+        )
+        if deleted:
+            cross_x,cross_y = (mx,my) if (u,v) in {('a','c'), ('c','a')} else ((x1+x2)/2,(y1+y2)/2)
             if mode == 'lemma2':
-                t = 0.3
-                if (u,v) in {('a','c'), ('c','a')}:
-                    cross_x = (1-t)**2*x1 + 2*(1-t)*t*cx + t*t*x2
-                    cross_y = (1-t)**2*y1 + 2*(1-t)*t*cy + t*t*y2
-                else:
-                    cross_x,cross_y = x1+t*(x2-x1),y1+t*(y2-y1)
-                cross_color = GRAY
-                parts.append(f'<circle cx="{cross_x}" cy="{cross_y}" r="6" fill="white"/>')
-            parts.append(f'<path d="M{cross_x-4},{cross_y-4} l8,8 M{cross_x-4},{cross_y+4} l8,-8" stroke="{cross_color}" stroke-width="1.8"/>')
+                color = RED if (u,v) in BOUNDARY else GRAY
+            parts.append(removed_edge(path, cross_x, cross_y, color,
+                                      cross_color=GRAY if mode == 'lemma2' else None))
+        else:
+            parts.append(f'<path d="{path}" fill="none" stroke="{color}" stroke-width="{width}" {dash} marker-mid="url(#{marker})"/>')
     for name,(x,y) in nodes.items():
         marked=(mode=='reach' and name in REACH) or (mode in {'lemma1', 'lemma2'} and name in S)
         if marked:
@@ -170,18 +181,17 @@ def svg(mode):
         cut_width = MATH_LABELS['δ⁺(S)'][0]
         reach_width = MATH_LABELS['Reach-cut'][0]
         pair_gap = 30
-        total = 35+gap+cut_width+pair_gap+20+gap+reach_width
+        total = 65+gap+cut_width+pair_gap+20+gap+reach_width
         start = (540-total)/2
-        mid = start+17.5
-        parts.append(f'<path d="M{start} 244 H{start+35}" stroke="{ORANGE}" stroke-width="1.5" stroke-dasharray="5 5"/>')
-        parts.append(f'<path d="M{mid-4},240 l8,8 M{mid-4},248 l8,-8" stroke="{ORANGE}" stroke-width="1.8"/>')
-        text(start+35+gap+cut_width/2,249,'δ⁺(S)')
-        center = start+35+gap+cut_width+pair_gap+10
+        mid = start+32.5
+        parts.append(removed_edge(f'M{start} 244 H{start+65}', mid, 244))
+        text(start+65+gap+cut_width/2,249,'δ⁺(S)')
+        center = start+65+gap+cut_width+pair_gap+10
         parts.append(f'<circle cx="{center}" cy="244" r="10" fill="white" stroke="{BLUE}" stroke-width="1.2"/>')
         parts.append(f'<circle cx="{center}" cy="244" r="7" fill="white" stroke="{BLUE}" stroke-width="1.2"/>')
         text(center+10+gap+reach_width/2,249,'Reach-cut')
     elif mode == 'lemma2':
-        entries = [('F',35), ('boundary-R',35), ('R',20)]
+        entries = [('F',65), ('boundary-R',35), ('R',20)]
         pair_gap = 25
         total = sum(symbol_width+gap+MATH_LABELS[key][0] for key,symbol_width in entries)+pair_gap*2
         start = (540-total)/2
@@ -193,18 +203,16 @@ def svg(mode):
                 parts.append(f'<circle cx="{center}" cy="244" r="7" fill="white" stroke="{BLUE}" stroke-width="1.2"/>')
             else:
                 if key == 'F':
-                    mid = start+17.5
-                    parts.append(f'<path d="M{start} 244 H{start+35}" stroke="{GRAY}" stroke-width="1.5" stroke-dasharray="5 5"/>')
-                    parts.append(f'<path d="M{mid-4},240 l8,8 M{mid-4},248 l8,-8" stroke="{GRAY}" stroke-width="1.8"/>')
+                    parts.append(removed_edge(f'M{start} 244 H{start+symbol_width}', start+symbol_width/2, 244, GRAY))
                 else:
-                    parts.append(f'<path d="M{start} 244 H{start+17.5} H{start+35}" stroke="{ORANGE}" stroke-width="3.2" marker-mid="url(#accent)"/>')
+                    parts.append(f'<path d="M{start} 244 H{start+35}" stroke="{RED}" stroke-width="1.5" stroke-dasharray="5 5"/>')
             text(start+symbol_width+gap+label_width/2,249,key)
             start += symbol_width+gap+label_width+pair_gap
     elif example:
         width = MATH_LABELS['F'][0]
-        start = (540 - (35 + gap + width)) / 2
-        parts.append(f'<path d="M{start} 244 H{start+17.5} H{start+35}" stroke="{ORANGE}" stroke-width="2.2" stroke-dasharray="5 5" marker-mid="url(#accent)"/>')
-        text(start+35+gap+width/2,249,'F')
+        start = (540 - (65 + gap + width)) / 2
+        parts.append(removed_edge(f'M{start} 244 H{start+65}', start+32.5, 244))
+        text(start+65+gap+width/2,249,'F')
     elif mode=='boundary':
         width = MATH_LABELS['δ⁺(S)'][0]
         start = (540 - (35 + gap + width)) / 2
@@ -258,9 +266,11 @@ def counterexample_svg():
             mid=(start+end)/2
             accent=panel==0 or i==panel-1
             color=ORANGE if accent else INK
-            dash='stroke-dasharray="4 4"' if panel==0 else ''
-            parts.append(f'<path d="M{start} 62 H{end}" stroke="{color}" stroke-width="{2.5 if accent else 1.5}" {dash}/>')
-            parts.append(f'<path d="M{mid-4} 58 L{mid+4} 62 L{mid-4} 66 Z" fill="{color}"/>')
+            if panel == 0:
+                parts.append(removed_edge(f'M{start} 62 H{end}', mid, 62))
+            else:
+                parts.append(f'<path d="M{start} 62 H{end}" stroke="{color}" stroke-width="{2.5 if accent else 1.5}"/>')
+                parts.append(f'<path d="M{mid-4} 58 L{mid+4} 62 L{mid-4} 66 Z" fill="{color}"/>')
             label(mid,41,'e1' if i==0 else 'e2',0.85)
         for i,name in enumerate(['s','a','t']):
             cx=x+23+62*i
