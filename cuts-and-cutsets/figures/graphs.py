@@ -88,8 +88,8 @@ def svg(mode):
             contents = f'<g stroke="{color}" stroke-width="0.22" stroke-linejoin="round">{contents}</g>'
         parts.append(f'<svg x="{x-width/2}" y="{y-5-height/2}" width="{width}" height="{height}" viewBox="0 0 {width} {height}">{contents}</svg>')
     if mode in {'cut', 'boundary', 'satisfies', 'lemma1', 'lemma2'}:
-        parts.append('<rect x="20" y="10" width="245" height="211" rx="16" fill="#EEF3FA"/>')
-        parts.append('<rect x="275" y="10" width="245" height="211" rx="16" fill="#FBF2E8"/>')
+        parts.append('<rect x="20" y="10" width="240" height="211" rx="16" fill="#DCE6F3"/>')
+        parts.append('<rect x="280" y="10" width="240" height="211" rx="16" fill="#FBF2E8"/>')
         text(45,36,'R' if mode == 'lemma2' else 'S')
         label_width = MATH_LABELS['T = V \\ S'][0]
         s_width = MATH_LABELS['S'][0]
@@ -251,8 +251,8 @@ def counterexample_svg():
         x = 180*panel
         if panel:
             split = x + (57 if panel==1 else 123)
-            parts.append(f'<rect x="{x+8}" y="20" width="{split-x-13}" height="72" rx="8" fill="#EEF3FA"/>')
-            parts.append(f'<rect x="{split+5}" y="20" width="{x+172-split-5}" height="72" rx="8" fill="#FBF2E8"/>')
+            parts.append(f'<rect x="{x+8}" y="20" width="{split-x-16}" height="72" rx="8" fill="#DCE6F3"/>')
+            parts.append(f'<rect x="{split+8}" y="20" width="{x+172-split-8}" height="72" rx="8" fill="#FBF2E8"/>')
         for i in range(2):
             start,end = x+23+62*i, x+85+62*i
             mid=(start+end)/2
